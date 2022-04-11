@@ -54,14 +54,14 @@
         /// <param name="eventType">The type of event</param>
         /// <param name="eventName">The name of the event</param>
         /// <param name="message">The event message</param>
-        /// <param name="ms">Elapsed time in ms since logger initialization.</param>
-        public SGEvent(SGEventType eventType, string eventName, string message, long ms)
+        /// <param name="elapsedMs">Elapsed time in ms since logger initialization.</param>
+        public SGEvent(SGEventType eventType, string eventName, string message, long elapsedMs)
         {
             Timestamp = DateTime.Now;
             EventType = eventType;
             EventName = eventName;
             Message = message;
-            ElapsedMs = ms;
+            ElapsedMs = elapsedMs;
         }
 
         /// <summary>

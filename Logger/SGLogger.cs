@@ -8,6 +8,13 @@ namespace Logger
     {
         private static Dictionary<Guid, SGEvent> logEvents = new Dictionary<Guid, SGEvent>();
         private static object logEventLock = new object();
+
+        private static Dictionary<Guid, SGEvent> startEvents = new Dictionary<Guid, SGEvent>();
+        private static object startEventLock = new object();
+
+        private static Dictionary<Guid, SGEvent> stopEvents = new Dictionary<Guid, SGEvent>();
+        private static object stopEventLock = new object();
+
         private static Stopwatch stopwatch = Stopwatch.StartNew();
 
         /// <summary>
@@ -22,9 +29,71 @@ namespace Logger
             Guid guid = Guid.NewGuid();
             lock (logEventLock)
             {
-                logEvents.Add(guid, new SGEvent(eventType, eventName, message, stopwatch.ElapsedMilliseconds));
+                try
+                {
+                    logEvents.Add(guid, new SGEvent(eventType, eventName, message, stopwatch.ElapsedMilliseconds));
+
+                }
+                catch (Exception)
+                {
+                    throw new Exception($"Problem adding this event:\n[{eventType.ToString().ToUpper()}][{eventName}] {message}");
+                }
             }
             return guid;
+        }
+
+        /// <summary>
+        /// Add an event to the log.
+        /// </summary>
+        /// <param name="eventType">Type of event. See <see cref="SGEventType"/>.</param>
+        /// <param name="eventName">The name of the event.</param>
+        /// <param name="message">The message of the event.</param>
+        /// <returns>The GUID of the stored event.</returns>
+        public static Guid AddEventStart(SGEventType eventType, string eventName, string message)
+        {
+            Guid guid = Guid.NewGuid();
+            lock (startEventLock)
+            {
+                try
+                {
+                    startEvents.Add(guid, new SGEvent(eventType, eventName, message, stopwatch.ElapsedMilliseconds));
+
+                }
+                catch (Exception)
+                {
+                    throw new Exception($"Problem adding this event:\n[{eventType.ToString().ToUpper()}][{eventName}] {message}");
+                }
+            }
+            return guid;
+        }
+
+        /// <summary>
+        /// Add the stop event.
+        /// </summary>
+        /// <param name="guid">GUID of the event that has to be stopped.</param>
+        /// <exception cref="ArgumentException">GUID does not exist or it has not been started yet.</exception>
+        public static void AddEventStop(Guid guid)
+        {
+            try
+            {
+                SGEvent startEvent = startEvents[guid];
+
+                lock (stopEventLock)
+                {
+                    try
+                    {
+                        stopEvents.Add(guid, new SGEvent(startEvent.EventType, startEvent.EventName, startEvent.Message, stopwatch.ElapsedMilliseconds));
+                    }
+                    catch (ArgumentException)
+                    {
+                        throw new ArgumentException($"Stop event with GUID {guid} already done.");
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw new ArgumentException($"Guid {guid} was not present in the start event list.");
+            }
         }
 
         /// <summary>
@@ -94,6 +163,63 @@ namespace Logger
             }
             File.WriteAllLines(path, fileLines);
         }
+
+        /// <summary>
+        /// Create a txt file asynchronously with all the persisting events logged.
+        /// The file line format:
+        /// <code>
+        /// [GUID]\t\t[TIMESTAMP]\t\t[EVENT TYPE]\t\t[EVENT NAME]\t\t[MESSAGE]\t\t[ELAPSED MS SINCE LOG INITIALIZATION]
+        /// </code>
+        /// </summary>
+        /// <param name="path">Path in which the file is created.</param>
+        /// <returns>The task on which the file creation is being processed.</returns>
+        public static Task DownloadPersistingEventsAsync(string path)
+        {
+            if (startEvents.Count == 0)
+                throw new Exception("Log has no events! Before the download make sure to add events to the logger.");
+
+            return Task.Run(async () =>
+            {
+                string[] fileLines = new string[startEvents.Count];
+                SGEvent stopEvent;
+                int i = 0;
+                foreach (KeyValuePair<Guid, SGEvent> startEvent in startEvents)
+                {
+                    stopEvent = stopEvents[startEvent.Key];
+                    fileLines[i] = $"{startEvent.Key}\t\t{startEvent.Value.Timestamp}\t\t{startEvent.Value.EventType}\t\t{startEvent.Value.EventName}\t\t{startEvent.Value.Message}\t\t{startEvent.Value.ElapsedMs}\t\t{stopEvent.ElapsedMs}";
+                    i++;
+                }
+
+                await File.WriteAllLinesAsync(path, fileLines);
+            });
+        }
+
+        /// <summary>
+        /// Create a txt file asynchronously with all the persisting events logged.
+        /// The file line format:
+        /// <code>
+        /// [GUID]\t\t[TIMESTAMP]\t\t[EVENT TYPE]\t\t[EVENT NAME]\t\t[MESSAGE]\t\t[ELAPSED MS SINCE LOG INITIALIZATION]
+        /// </code>
+        /// </summary>
+        /// <param name="path">Path in which the file is created.</param>
+        public static void DownloadPersistingEventsSync(string path)
+        {
+            if (logEvents.Count == 0)
+                throw new Exception("Log has no events! Before the download make sure to add events to the logger.");
+
+            string[] fileLines = new string[startEvents.Count];
+            SGEvent stopEvent;
+            int i = 0;
+            foreach (KeyValuePair<Guid, SGEvent> startEvent in startEvents)
+            {
+                stopEvent = stopEvents[startEvent.Key];
+                fileLines[i] = $"{startEvent.Key}\t\t{startEvent.Value.Timestamp}\t\t{startEvent.Value.EventType}\t\t{startEvent.Value.EventName}\t\t{startEvent.Value.Message}\t\t{startEvent.Value.ElapsedMs}\t\t{stopEvent.ElapsedMs}";
+                i++;
+            }
+            File.WriteAllLines(path, fileLines);
+        }
+
+
         /// <summary>
         /// Logs the event log to the console.
         /// </summary>

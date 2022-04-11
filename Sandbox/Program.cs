@@ -1,10 +1,51 @@
 ﻿using Logger;
 
-//TestTrace();
-//TestLogToConsole();
+TestTrace();
+TestLogToConsole();
 TestGuidAccess(new Guid());
-//TestDownloadAsync(@"C:\Users\Simone Giovinazzo\dev\TestFiles\asynclog.txt");
-//TestDownloadSync(@"C:\Users\Simone Giovinazzo\dev\TestFiles\synclog.txt");
+TestDownloadPersistingAsync(@"C:\Users\Simone Giovinazzo\dev\TestFiles\persistinglogasync.txt");
+TestDownloadAsync(@"C:\Users\Simone Giovinazzo\dev\TestFiles\asynclog.txt");
+TestDownloadSync(@"C:\Users\Simone Giovinazzo\dev\TestFiles\synclog.txt");
+
+void TestDownloadPersistingAsync(string path)
+{
+    Thread thread1 = new Thread(() =>
+    {
+        List<Guid> guids = new List<Guid>();
+        for (int i = 0; i < 50000; i++)
+        {
+            guids.Add(SGLogger.AddEventStart(SGEventType.Info, $"START from thread 1", $"Tentativo numero {i}"));
+        }
+        foreach (Guid guid in guids)
+        {
+            SGLogger.AddEventStop(guid);
+        }
+    });
+
+    Thread thread2 = new Thread(() =>
+    {
+        List<Guid> guids = new List<Guid>();
+        for (int i = 0; i < 50000; i++)
+        {
+            guids.Add(SGLogger.AddEventStart(SGEventType.Info, $"START from thread 2", $"Tentativo numero {i}"));
+
+        }
+        foreach (Guid guid in guids)
+        {
+            SGLogger.AddEventStop(guid);
+        }
+    });
+
+
+
+    thread1.Start();
+    thread2.Start();
+
+    thread1.Join();
+    thread2.Join();
+
+    SGLogger.DownloadPersistingEventsAsync(path).Wait();
+}
 
 void TestTrace()
 {
@@ -16,7 +57,6 @@ void TestTrace()
     SGLogger.TraceEvent(guidWarning);
     SGLogger.TraceEvent(guidError);
     SGLogger.TraceEvent(guidAbort);
-
 }
 void TestLogToConsole()
 {
