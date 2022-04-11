@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Logger", "Logger\Logger.csproj", "{7472367F-38BD-4C26-B2F5-B34F6D48E5DF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sandbox", "Sandbox\Sandbox.csproj", "{C0A7CA1D-CAFC-463C-8E57-11B6451F113D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7472367F-38BD-4C26-B2F5-B34F6D48E5DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7472367F-38BD-4C26-B2F5-B34F6D48E5DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7472367F-38BD-4C26-B2F5-B34F6D48E5DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7472367F-38BD-4C26-B2F5-B34F6D48E5DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0A7CA1D-CAFC-463C-8E57-11B6451F113D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0A7CA1D-CAFC-463C-8E57-11B6451F113D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0A7CA1D-CAFC-463C-8E57-11B6451F113D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E901E766-4198-4AFE-B936-41090760098B}
+	EndGlobalSection
+EndGlobal
