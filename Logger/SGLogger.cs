@@ -97,19 +97,59 @@ namespace Logger
         }
 
         /// <summary>
-        /// Returns the log event with the specified GUID.
+        /// Returns the logged event with the specified GUID.
         /// </summary>
-        /// <param name="guid">The GUID of the message.</param>
-        /// <returns>The log event.</returns>
-        public static SGEvent GetMessage(Guid guid)
+        /// <param name="guid">The GUID of the logged event.</param>
+        /// <returns>The logged event.</returns>
+        /// <exception cref="ArgumentException">Triggered when the GUID specified is not found.</exception>
+        public static SGEvent GetEvent(Guid guid)
         {
             try
             {
+                // a lock is not necessary since you cannot pass the guid returned from the Add method, and when you pass it you already know it is on the logEvents structure
                 return logEvents[guid];
             }
             catch (Exception)
             {
-                throw new ArgumentException($"Guid {guid} was not present in the log event list.");
+                throw new ArgumentException($"Guid {guid} was not present in the event log.");
+            }
+        }
+
+        /// <summary>
+        /// Returns the logged start event with the specified GUID.
+        /// </summary>
+        /// <param name="guid">The GUID of the logged event.</param>
+        /// <returns>The logged start event.</returns>
+        /// <exception cref="ArgumentException">Triggered when the GUID specified is not found.</exception>
+        public static SGEvent GetStartEvent(Guid guid)
+        {
+            try
+            {
+                // a lock is not necessary since you cannot pass the guid returned from the Add method, and when you pass it you already know it is on the startEvents structure
+                return startEvents[guid];
+            }
+            catch (Exception)
+            {
+                throw new ArgumentException($"Guid {guid} was not present in the start event log.");
+            }
+        }
+
+        /// <summary>
+        /// Returns the logged stop event with the specified GUID.
+        /// </summary>
+        /// <param name="guid">The GUID of the logged event.</param>
+        /// <returns>The logged stop event.</returns>
+        /// <exception cref="ArgumentException">Triggered when the GUID specified is not found.</exception>
+        public static SGEvent GetStopEvent(Guid guid)
+        {
+            try
+            {
+                // a lock is not necessary since you cannot pass the guid returned from the Add method, and when you pass it you already know it is on the stopEvents structure
+                return stopEvents[guid];
+            }
+            catch (Exception)
+            {
+                throw new ArgumentException($"Guid {guid} was not present in the start event log.");
             }
         }
 
@@ -129,12 +169,16 @@ namespace Logger
 
             return Task.Run(async () =>
             {
-                string[] fileLines = new string[logEvents.Count];
-                int i = 0;
-                foreach (KeyValuePair<Guid, SGEvent> e in logEvents)
+                string[] fileLines;
+                lock (logEventLock)
                 {
-                    fileLines[i] = $"{e.Key}\t\t{e.Value.Timestamp}\t\t{e.Value.EventType}\t\t{e.Value.EventName}\t\t{e.Value.Message}\t\t{e.Value.ElapsedMs}";
-                    i++;
+                    fileLines = new string[logEvents.Count];
+                    int i = 0;
+                    foreach (KeyValuePair<Guid, SGEvent> e in logEvents)
+                    {
+                        fileLines[i] = $"{e.Key}\t\t{e.Value.Timestamp}\t\t{e.Value.EventType}\t\t{e.Value.EventName}\t\t{e.Value.Message}\t\t{e.Value.ElapsedMs}";
+                        i++;
+                    }
                 }
 
                 await File.WriteAllLinesAsync(path, fileLines);
@@ -154,13 +198,19 @@ namespace Logger
             if (logEvents.Count == 0)
                 throw new Exception("Log has no events! Before the download make sure to add events to the logger.");
 
-            string[] fileLines = new string[logEvents.Count];
-            int i = 0;
-            foreach (KeyValuePair<Guid, SGEvent> e in logEvents)
+            string[] fileLines;
+
+            lock (logEventLock)
             {
-                fileLines[i] = $"{e.Key}\t\t{e.Value.Timestamp}\t\t{e.Value.EventType}\t\t{e.Value.EventName}\t\t{e.Value.Message}\t\t{e.Value.ElapsedMs}";
-                i++;
+                fileLines = new string[logEvents.Count];
+                int i = 0;
+                foreach (KeyValuePair<Guid, SGEvent> e in logEvents)
+                {
+                    fileLines[i] = $"{e.Key}\t\t{e.Value.Timestamp}\t\t{e.Value.EventType}\t\t{e.Value.EventName}\t\t{e.Value.Message}\t\t{e.Value.ElapsedMs}";
+                    i++;
+                }
             }
+
             File.WriteAllLines(path, fileLines);
         }
 
@@ -180,14 +230,18 @@ namespace Logger
 
             return Task.Run(async () =>
             {
-                string[] fileLines = new string[startEvents.Count];
-                SGEvent stopEvent;
-                int i = 0;
-                foreach (KeyValuePair<Guid, SGEvent> startEvent in startEvents)
+                string[] fileLines;
+                lock (startEventLock)
                 {
-                    stopEvent = stopEvents[startEvent.Key];
-                    fileLines[i] = $"{startEvent.Key}\t\t{startEvent.Value.Timestamp}\t\t{startEvent.Value.EventType}\t\t{startEvent.Value.EventName}\t\t{startEvent.Value.Message}\t\t{startEvent.Value.ElapsedMs}\t\t{stopEvent.ElapsedMs}";
-                    i++;
+                    fileLines = new string[startEvents.Count];
+                    SGEvent stopEvent;
+                    int i = 0;
+                    foreach (KeyValuePair<Guid, SGEvent> startEvent in startEvents)
+                    {
+                        stopEvent = stopEvents[startEvent.Key];
+                        fileLines[i] = $"{startEvent.Key}\t\t{startEvent.Value.Timestamp}\t\t{startEvent.Value.EventType}\t\t{startEvent.Value.EventName}\t\t{startEvent.Value.Message}\t\t{startEvent.Value.ElapsedMs}\t\t{stopEvent.ElapsedMs}";
+                        i++;
+                    }
                 }
 
                 await File.WriteAllLinesAsync(path, fileLines);
@@ -207,14 +261,19 @@ namespace Logger
             if (logEvents.Count == 0)
                 throw new Exception("Log has no events! Before the download make sure to add events to the logger.");
 
-            string[] fileLines = new string[startEvents.Count];
-            SGEvent stopEvent;
-            int i = 0;
-            foreach (KeyValuePair<Guid, SGEvent> startEvent in startEvents)
+            string[] fileLines;
+
+            lock (startEventLock)
             {
-                stopEvent = stopEvents[startEvent.Key];
-                fileLines[i] = $"{startEvent.Key}\t\t{startEvent.Value.Timestamp}\t\t{startEvent.Value.EventType}\t\t{startEvent.Value.EventName}\t\t{startEvent.Value.Message}\t\t{startEvent.Value.ElapsedMs}\t\t{stopEvent.ElapsedMs}";
-                i++;
+                fileLines = new string[startEvents.Count];
+                SGEvent stopEvent;
+                int i = 0;
+                foreach (KeyValuePair<Guid, SGEvent> startEvent in startEvents)
+                {
+                    stopEvent = stopEvents[startEvent.Key];
+                    fileLines[i] = $"{startEvent.Key}\t\t{startEvent.Value.Timestamp}\t\t{startEvent.Value.EventType}\t\t{startEvent.Value.EventName}\t\t{startEvent.Value.Message}\t\t{startEvent.Value.ElapsedMs}\t\t{stopEvent.ElapsedMs}";
+                    i++;
+                }
             }
             File.WriteAllLines(path, fileLines);
         }

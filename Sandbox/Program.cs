@@ -75,7 +75,7 @@ void TestGuidAccess(Guid guid)
 {
     try
     {
-        SGEvent logEvent = SGLogger.GetMessage(guid);
+        SGEvent logEvent = SGLogger.GetEvent(guid);
     }
     catch (Exception e)
     {
